@@ -53,11 +53,10 @@ const options: ChartOptions<'bar'> = {
   },
   scales: {
     y: {
-      type: 'linear' as const,
-      beginAtZero: true,
+      type: 'linear',
       ticks: {
         callback: function(value) {
-          return `$${value.toLocaleString()}`;
+          return '$' + value;
         },
       },
     },
@@ -87,6 +86,29 @@ const expensesByCategory = {
   ],
 };
 
+const categoryOptions: ChartOptions<'bar'> = {
+  responsive: true,
+  plugins: {
+    legend: {
+      position: 'top' as const,
+    },
+    title: {
+      display: true,
+      text: 'Expenses by Category',
+    },
+  },
+  scales: {
+    y: {
+      type: 'linear',
+      ticks: {
+        callback: function(value) {
+          return '$' + value;
+        },
+      },
+    },
+  },
+};
+
 export const Reports: React.FC = () => {
   return (
     <div className="bg-white shadow sm:rounded-lg">
@@ -100,16 +122,7 @@ export const Reports: React.FC = () => {
           </div>
           <div className="p-4 bg-gray-50 rounded-lg">
             <Bar
-              options={{
-                ...options,
-                plugins: {
-                  ...options.plugins,
-                  title: {
-                    ...options.plugins?.title,
-                    text: 'Expenses by Category',
-                  },
-                },
-              }}
+              options={categoryOptions}
               data={expensesByCategory}
             />
           </div>

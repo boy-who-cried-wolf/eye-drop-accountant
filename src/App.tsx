@@ -1,4 +1,3 @@
-import React from 'react';
 import { FileUploader } from './components/FileUploader';
 import { TransactionList } from './components/TransactionList';
 import { Reconciliation } from './components/Reconciliation';
