@@ -19,33 +19,86 @@ export const FileUploader: React.FC = () => {
     try {
       const worker = await createWorker();
       await worker.reinitialize('eng');
+      
+      // Configure Tesseract for better accuracy
+      await worker.setParameters({
+        tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz$£€.,/- ',
+        tessjs_create_pdf: '0',
+        tessjs_create_hocr: '0',
+        tessjs_create_tsv: '0',
+        tessjs_create_box: '0',
+        tessjs_create_unlv: '0',
+        tessjs_create_osd: '0'
+      });
+
       const { data: { text } } = await worker.recognize(file);
       await worker.terminate();
 
-      // Improved parsing logic
-      const lines = text.split('\n').map(line => line.trim());
+      console.log('Raw OCR text:', text); // Debug log
+
+      // Improved text preprocessing
+      const lines = text
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0)
+        .map(line => line.replace(/\s+/g, ' ')); // Normalize whitespace
+
+      console.log('Processed lines:', lines); // Debug log
       
-      // Try to find vendor name (look for common patterns)
-      const vendorLine = lines.find(line => 
-        line.match(/^(?:Company|Vendor|From|Bill To|Invoice To|Paid to):/i)
-      );
-      const vendor = vendorLine 
-        ? vendorLine.split(/^(?:Company|Vendor|From|Bill To|Invoice To|Paid to):/i)[1]?.trim() || 'Unknown'
-        : 'Unknown';
+      // Try to find vendor name with more patterns
+      const vendorPatterns = [
+        /^(?:Company|Vendor|From|Bill To|Invoice To|Paid to|Supplier|Merchant):\s*(.+)$/i,
+        /^(?:Invoice From|Billed From|Issued By):\s*(.+)$/i,
+        /^([A-Za-z\s&]+(?:Inc\.|LLC|Ltd\.|Corp\.|Corporation|Limited)?)\s*$/i
+      ];
 
-      // Try to find amount (look for currency symbols and numbers)
-      const amountLine = lines.find(line => 
-        line.match(/(?:Amount|Total|Due|Balance|Subtotal|Total Amount):\s*[$£€]?\s*\d+\.?\d*/i)
-      );
-      const amountMatch = amountLine?.match(/[$£€]?\s*(\d+\.?\d*)/i);
-      const amount = amountMatch ? parseFloat(amountMatch[1]) : 0;
+      let vendor = 'Unknown';
+      for (const pattern of vendorPatterns) {
+        const match = lines.find(line => pattern.test(line));
+        if (match) {
+          vendor = match.replace(pattern, '$1').trim();
+          if (vendor !== '') break;
+        }
+      }
 
-      // Try to find date (look for common date formats)
-      const dateLine = lines.find(line => 
-        line.match(/(?:Date|Invoice Date|Issue Date|Due Date):\s*\d{1,2}[-/]\d{1,2}[-/]\d{2,4}/i)
-      );
-      const dateMatch = dateLine?.match(/(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})/i);
-      const date = dateMatch ? dateMatch[1] : new Date().toISOString().split('T')[0];
+      // Try to find amount with more patterns
+      const amountPatterns = [
+        /(?:Amount|Total|Due|Balance|Subtotal|Total Amount|Invoice Total):\s*[$£€]?\s*(\d+(?:,\d{3})*(?:\.\d{2})?)/i,
+        /[$£€]\s*(\d+(?:,\d{3})*(?:\.\d{2})?)/i,
+        /Total:\s*[$£€]?\s*(\d+(?:,\d{3})*(?:\.\d{2})?)/i
+      ];
+
+      let amount = 0;
+      for (const pattern of amountPatterns) {
+        const match = lines.find(line => pattern.test(line));
+        if (match) {
+          const amountStr = match.replace(pattern, '$1').replace(/,/g, '');
+          amount = parseFloat(amountStr);
+          if (!isNaN(amount)) break;
+        }
+      }
+
+      // Try to find date with more patterns
+      const datePatterns = [
+        /(?:Date|Invoice Date|Issue Date|Due Date|Billing Date):\s*(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})/i,
+        /(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})/i
+      ];
+
+      let date = new Date().toISOString().split('T')[0];
+      for (const pattern of datePatterns) {
+        const match = lines.find(line => pattern.test(line));
+        if (match) {
+          const dateStr = match.replace(pattern, '$1');
+          // Try to parse the date
+          const parsedDate = new Date(dateStr);
+          if (!isNaN(parsedDate.getTime())) {
+            date = parsedDate.toISOString().split('T')[0];
+            break;
+          }
+        }
+      }
+
+      console.log('Extracted data:', { vendor, amount, date }); // Debug log
 
       const data: ExtractedData = {
         id: Math.random().toString(36).substr(2, 9),
@@ -58,6 +111,7 @@ export const FileUploader: React.FC = () => {
       setExtractedData(prev => [...prev, data]);
     } catch (error) {
       console.error('Error processing image:', error);
+      // You might want to show an error message to the user here
     } finally {
       setIsProcessing(false);
     }
@@ -163,7 +217,7 @@ export const FileUploader: React.FC = () => {
                       <div className="flex space-x-2">
                         <button
                           onClick={() => handleRetry(data)}
-                          className="text-blue-400 hover:text-blue-300"
+                          className="text-white hover:text-white/80"
                           title="Retry OCR"
                         >
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -172,7 +226,7 @@ export const FileUploader: React.FC = () => {
                         </button>
                         <button
                           onClick={() => handleDelete(data.id)}
-                          className="text-red-400 hover:text-red-300"
+                          className="text-white hover:text-white/80"
                           title="Delete"
                         >
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
