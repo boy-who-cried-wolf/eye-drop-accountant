@@ -2,6 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { analyzeReceipt, } from '../integrations/ai';
 import { performOCR } from '../integrations/ocr';
+import { Alert } from './Alert';
 
 interface ExtractedData {
   id: string;
@@ -17,12 +18,20 @@ interface ExtractedData {
   }>;
 }
 
+interface ErrorState {
+  title: string;
+  message: string;
+  type: 'error' | 'warning' | 'info' | 'success';
+}
+
 export const FileUploader: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [extractedData, setExtractedData] = useState<ExtractedData[]>([]);
+  const [error, setError] = useState<ErrorState | null>(null);
 
   const processImage = async (file: File) => {
     setIsProcessing(true);
+    setError(null);
     try {
       // Perform OCR
       const { text } = await performOCR(file);
@@ -45,8 +54,29 @@ export const FileUploader: React.FC = () => {
 
         setExtractedData(prev => [...prev, data]);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error processing image:', error);
+      
+      // Handle specific error cases
+      if (error.status === 429) {
+        setError({
+          type: 'warning',
+          title: 'Rate Limit Exceeded',
+          message: 'You have reached the API rate limit. Please wait a few minutes before trying again or consider upgrading your subscription for higher limits.'
+        });
+      } else if (error.status === 401) {
+        setError({
+          type: 'error',
+          title: 'Authentication Error',
+          message: 'Invalid API key. Please check your OpenAI API key configuration.'
+        });
+      } else {
+        setError({
+          type: 'error',
+          title: 'Processing Error',
+          message: 'Failed to process the receipt. Please try again or contact support if the issue persists.'
+        });
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -79,6 +109,15 @@ export const FileUploader: React.FC = () => {
 
   return (
     <div className="bg-white/10 backdrop-blur-sm rounded-xl shadow-xl p-6">
+      {error && (
+        <Alert
+          type={error.type}
+          title={error.title}
+          message={error.message}
+          onClose={() => setError(null)}
+        />
+      )}
+      
       <div
         {...getRootProps()}
         className={`relative rounded-lg border-2 border-dashed p-12 text-center

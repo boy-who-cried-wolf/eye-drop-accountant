@@ -9,6 +9,17 @@ export interface AIAnalysisResult {
   }>;
 }
 
+export class AIError extends Error {
+  constructor(
+    message: string,
+    public status?: number,
+    public details?: any
+  ) {
+    super(message);
+    this.name = 'AIError';
+  }
+}
+
 export const analyzeReceipt = async (text: string): Promise<AIAnalysisResult | null> => {
   try {
     // Debug logging
@@ -17,8 +28,7 @@ export const analyzeReceipt = async (text: string): Promise<AIAnalysisResult | n
     
     const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
     if (!apiKey) {
-      console.error('OpenAI API key is not set in environment variables');
-      return null;
+      throw new AIError('OpenAI API key is not set in environment variables', 401);
     }
 
     // Debug logging for the request
@@ -65,11 +75,22 @@ export const analyzeReceipt = async (text: string): Promise<AIAnalysisResult | n
       })
     });
 
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new AIError(
+        errorData.error?.message || 'Failed to analyze receipt',
+        response.status,
+        errorData
+      );
+    }
+
     const data = await response.json();
     const analysis = JSON.parse(data.choices[0].message.content);
     return analysis;
   } catch (error) {
-    console.error('Error analyzing text with AI:', error);
-    return null;
+    if (error instanceof AIError) {
+      throw error;
+    }
+    throw new AIError('Failed to analyze receipt', 500, error);
   }
 }; 
