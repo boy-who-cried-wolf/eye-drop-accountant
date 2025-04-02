@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { createWorker } from 'tesseract.js';
+import { analyzeReceipt, } from '../integrations/ai';
+import { performOCR } from '../integrations/ocr';
 
 interface ExtractedData {
   id: string;
@@ -20,52 +21,15 @@ export const FileUploader: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [extractedData, setExtractedData] = useState<ExtractedData[]>([]);
 
-  const analyzeTextWithAI = async (text: string) => {
-    try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.REACT_APP_OPENAI_API_KEY}`
-        },
-        body: JSON.stringify({
-          model: "gpt-3.5-turbo",
-          messages: [
-            {
-              role: "system",
-              content: "You are a receipt analysis assistant. Extract the following information from the receipt text: vendor name, total amount, date, and list of items with their prices. Format the response as JSON."
-            },
-            {
-              role: "user",
-              content: text
-            }
-          ],
-          temperature: 0.3,
-          max_tokens: 500
-        })
-      });
-
-      const data = await response.json();
-      const analysis = JSON.parse(data.choices[0].message.content);
-      return analysis;
-    } catch (error) {
-      console.error('Error analyzing text with AI:', error);
-      return null;
-    }
-  };
-
   const processImage = async (file: File) => {
     setIsProcessing(true);
     try {
-      const worker = await createWorker();
-      await worker.reinitialize('eng');
-      const { data: { text } } = await worker.recognize(file);
-      await worker.terminate();
-
+      // Perform OCR
+      const { text } = await performOCR(file);
       console.log('Raw OCR text:', text);
 
       // Analyze the text with AI
-      const analysis = await analyzeTextWithAI(text);
+      const analysis = await analyzeReceipt(text);
       console.log('AI Analysis:', analysis);
 
       if (analysis) {
