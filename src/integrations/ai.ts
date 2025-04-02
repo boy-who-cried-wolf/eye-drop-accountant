@@ -11,12 +11,19 @@ export interface AIAnalysisResult {
 
 export const analyzeReceipt = async (text: string): Promise<AIAnalysisResult | null> => {
   try {
+    // Debug logging
+    console.log('Environment variables:', import.meta.env);
+    console.log('API Key:', import.meta.env.VITE_OPENAI_API_KEY);
+    
     const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
     if (!apiKey) {
       console.error('OpenAI API key is not set in environment variables');
       return null;
     }
 
+    // Debug logging for the request
+    console.log('Making request with API key:', apiKey.substring(0, 4) + '...');
+    
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
