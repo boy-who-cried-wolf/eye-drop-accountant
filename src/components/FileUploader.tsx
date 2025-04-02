@@ -52,23 +52,19 @@ export const FileUploader: React.FC = () => {
   });
 
   return (
-    <div className="bg-white shadow sm:rounded-lg">
-      <div className="px-4 py-5 sm:p-6">
-        <h3 className="text-lg font-medium leading-6 text-gray-900">
-          Upload Invoices/Receipts
-        </h3>
-        <div className="mt-2 max-w-xl text-sm text-gray-500">
-          <p>Drop your files here or click to select files to upload.</p>
-        </div>
-        <div
-          {...getRootProps()}
-          className={`mt-4 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md
-            ${isDragActive ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300'}`}
-        >
-          <div className="space-y-1 text-center">
-            <input {...getInputProps()} />
+    <div className="bg-white/10 backdrop-blur-sm rounded-xl shadow-xl p-6">
+      <div
+        {...getRootProps()}
+        className={`relative rounded-lg border-2 border-dashed p-12 text-center
+          ${isDragActive 
+            ? 'border-white bg-white/20' 
+            : 'border-white/50 hover:border-white/80'}`}
+      >
+        <input {...getInputProps()} />
+        <div className="space-y-4">
+          <div className="flex justify-center">
             <svg
-              className="mx-auto h-12 w-12 text-gray-400"
+              className="h-12 w-12 text-white"
               stroke="currentColor"
               fill="none"
               viewBox="0 0 48 48"
@@ -81,33 +77,57 @@ export const FileUploader: React.FC = () => {
                 strokeLinejoin="round"
               />
             </svg>
-            <div className="flex text-sm text-gray-600">
-              <span>Upload a file or drag and drop</span>
-            </div>
+          </div>
+          <div className="text-white">
+            <p className="text-lg font-medium">
+              {isDragActive
+                ? 'Drop your files here'
+                : 'Drag and drop your files here, or click to select files'}
+            </p>
+            <p className="mt-2 text-sm text-indigo-100">
+              Supported formats: PDF, PNG, JPG, JPEG
+            </p>
           </div>
         </div>
-        {isProcessing && (
-          <div className="mt-4 text-center text-sm text-gray-500">
+      </div>
+
+      {isProcessing && (
+        <div className="mt-6 text-center">
+          <div className="inline-flex items-center px-4 py-2 font-semibold leading-6 text-white shadow rounded-md bg-white/10">
+            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
             Processing your document...
           </div>
-        )}
-        {extractedData.length > 0 && (
-          <div className="mt-4">
-            <h4 className="text-sm font-medium text-gray-900">Extracted Data:</h4>
-            <ul className="mt-2 divide-y divide-gray-200">
-              {extractedData.map((data, index) => (
-                <li key={index} className="py-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="font-medium">{data.vendor}</span>
-                    <span className="text-gray-500">${data.amount.toFixed(2)}</span>
-                    <span className="text-gray-500">{data.date}</span>
-                  </div>
-                </li>
-              ))}
-            </ul>
+        </div>
+      )}
+
+      {extractedData.length > 0 && (
+        <div className="mt-8">
+          <h4 className="text-lg font-medium text-white mb-4">Extracted Data</h4>
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg overflow-hidden">
+            <table className="min-w-full divide-y divide-white/10">
+              <thead>
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-white/70 uppercase tracking-wider">Vendor</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-white/70 uppercase tracking-wider">Amount</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-white/70 uppercase tracking-wider">Date</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/10">
+                {extractedData.map((data, index) => (
+                  <tr key={index}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-white">{data.vendor}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-white">${data.amount.toFixed(2)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-white">{data.date}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }; 
