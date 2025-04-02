@@ -9,7 +9,7 @@ function App() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Logo />
             <nav className="flex space-x-8">
@@ -23,7 +23,7 @@ function App() {
 
       {/* Hero Section */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="px-4 sm:px-6 lg:px-8 py-16">
           <div className="text-center">
             <h1 className="text-4xl font-bold text-white mb-4">Eye-drop Accounting</h1>
             <p className="text-xl text-blue-100 mb-8">Upload your documents and let AI handle the rest</p>
@@ -33,7 +33,7 @@ function App() {
       </div>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-8">
           <TransactionList />
           <Reconciliation />
@@ -43,7 +43,7 @@ function App() {
 
       {/* Footer */}
       <footer className="bg-white border-t">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
               <h3 className="text-sm font-semibold text-gray-400 tracking-wider uppercase">About</h3>
