@@ -8,11 +8,51 @@ interface ExtractedData {
   amount: number;
   date: string;
   file: File;
+  rawText: string;
+  items?: Array<{
+    name: string;
+    price: number;
+    quantity?: number;
+  }>;
 }
 
 export const FileUploader: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [extractedData, setExtractedData] = useState<ExtractedData[]>([]);
+
+  const analyzeTextWithAI = async (text: string) => {
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.REACT_APP_OPENAI_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: "gpt-3.5-turbo",
+          messages: [
+            {
+              role: "system",
+              content: "You are a receipt analysis assistant. Extract the following information from the receipt text: vendor name, total amount, date, and list of items with their prices. Format the response as JSON."
+            },
+            {
+              role: "user",
+              content: text
+            }
+          ],
+          temperature: 0.3,
+          max_tokens: 500
+        })
+      });
+
+      const data = await response.json();
+      const analysis = JSON.parse(data.choices[0].message.content);
+      return analysis;
+    } catch (error) {
+      console.error('Error analyzing text with AI:', error);
+      return null;
+    }
+  };
 
   const processImage = async (file: File) => {
     setIsProcessing(true);
@@ -24,64 +64,23 @@ export const FileUploader: React.FC = () => {
 
       console.log('Raw OCR text:', text);
 
-      // Split into lines and clean up
-      const lines = text
-        .split('\n')
-        .map(line => line.trim())
-        .filter(line => line.length > 0);
+      // Analyze the text with AI
+      const analysis = await analyzeTextWithAI(text);
+      console.log('AI Analysis:', analysis);
 
-      console.log('Processed lines:', lines);
+      if (analysis) {
+        const data: ExtractedData = {
+          id: Math.random().toString(36).substr(2, 9),
+          vendor: analysis.vendor || 'Unknown',
+          amount: analysis.total || 0,
+          date: analysis.date || new Date().toISOString().split('T')[0],
+          file,
+          rawText: text,
+          items: analysis.items
+        };
 
-      // Find the vendor name (usually appears at the top of the receipt)
-      let vendor = 'Unknown';
-      const vendorCandidates = lines.slice(0, 5); // Look at first 5 lines
-      for (const line of vendorCandidates) {
-        // Look for common store names or patterns
-        if (line.includes('TRADER') || line.includes('WALMART') || line.includes('TARGET') || 
-            line.includes('COSTCO') || line.includes('AMAZON') || line.includes('STARBUCKS')) {
-          vendor = line;
-          break;
-        }
+        setExtractedData(prev => [...prev, data]);
       }
-
-      // Find the total amount (usually at the bottom of the receipt)
-      let amount = 0;
-      const totalCandidates = lines.slice(-5); // Look at last 5 lines
-      for (const line of totalCandidates) {
-        // Look for lines containing currency amounts
-        const matches = line.match(/\$(\d+\.\d{2})/);
-        if (matches) {
-          amount = parseFloat(matches[1]);
-          break;
-        }
-      }
-
-      // Find the date (usually near the bottom of the receipt)
-      let date = new Date().toISOString().split('T')[0];
-      const dateCandidates = lines.slice(-10); // Look at last 10 lines
-      for (const line of dateCandidates) {
-        // Look for common date formats
-        const dateMatch = line.match(/(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})/);
-        if (dateMatch) {
-          const parsedDate = new Date(dateMatch[1]);
-          if (!isNaN(parsedDate.getTime())) {
-            date = parsedDate.toISOString().split('T')[0];
-            break;
-          }
-        }
-      }
-
-      console.log('Extracted data:', { vendor, amount, date });
-
-      const data: ExtractedData = {
-        id: Math.random().toString(36).substr(2, 9),
-        vendor,
-        amount,
-        date,
-        file,
-      };
-
-      setExtractedData(prev => [...prev, data]);
     } catch (error) {
       console.error('Error processing image:', error);
     } finally {
@@ -176,6 +175,7 @@ export const FileUploader: React.FC = () => {
                   <th className="px-6 py-3 text-xs font-medium text-white/70 uppercase tracking-wider">Vendor</th>
                   <th className="px-6 py-3 text-xs font-medium text-white/70 uppercase tracking-wider">Amount</th>
                   <th className="px-6 py-3 text-xs font-medium text-white/70 uppercase tracking-wider">Date</th>
+                  <th className="px-6 py-3 text-xs font-medium text-white/70 uppercase tracking-wider">Items</th>
                   <th className="px-6 py-3 text-xs font-medium text-white/70 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
@@ -185,11 +185,25 @@ export const FileUploader: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-white">{data.vendor}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-white">${data.amount.toFixed(2)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-white">{data.date}</td>
+                    <td className="px-6 py-4 text-sm text-white">
+                      {data.items && data.items.length > 0 ? (
+                        <ul className="list-disc list-inside">
+                          {data.items.map((item, index) => (
+                            <li key={index}>
+                              {item.name} - ${item.price.toFixed(2)}
+                              {item.quantity && ` (x${item.quantity})`}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        'No items found'
+                      )}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
-                      <div className="flex space-x-2">
+                      <div className="flex justify-center space-x-2">
                         <button
                           onClick={() => handleRetry(data)}
-                          className="p-1 hover:bg-white/10 rounded-full"
+                          className="p-1 bg-transparent hover:bg-white/10 rounded-full"
                           title="Retry OCR"
                         >
                           <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -198,7 +212,7 @@ export const FileUploader: React.FC = () => {
                         </button>
                         <button
                           onClick={() => handleDelete(data.id)}
-                          className="p-1 hover:bg-white/10 rounded-full"
+                          className="p-1 bg-transparent hover:bg-white/10 rounded-full"
                           title="Delete"
                         >
                           <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
