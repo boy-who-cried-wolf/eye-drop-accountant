@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { analyzeReceipt, } from '../integrations/ai';
+import { analyzeReceipt } from '../integrations/ai';
 import { performOCR } from '../integrations/ocr';
 import { Alert } from './Alert';
 
@@ -54,17 +54,17 @@ export const FileUploader: React.FC = () => {
 
         setExtractedData(prev => [...prev, data]);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error processing image:', error);
       
       // Handle specific error cases
-      if (error.status === 429) {
+      if (error && typeof error === 'object' && 'status' in error && error.status === 429) {
         setError({
           type: 'warning',
           title: 'Rate Limit Exceeded',
           message: 'You have reached the API rate limit. Please wait a few minutes before trying again or consider upgrading your subscription for higher limits.'
         });
-      } else if (error.status === 401) {
+      } else if (error && typeof error === 'object' && 'status' in error && error.status === 401) {
         setError({
           type: 'error',
           title: 'Authentication Error',
