@@ -63,11 +63,8 @@ A modern web application that uses AI to analyze and extract information from re
 
 ## 📸 Screenshots
 
-![Upload Interface](screenshots/upload.png)
-*Modern drag-and-drop interface*
-
-![Analysis Results](screenshots/results.png)
-*Detailed receipt analysis results*
+![Preview](screenshots/preview.png)
+*Modern drag-and-drop interface & Detailed receipt analysis results*
 
 ## 🤝 Contributing
 
