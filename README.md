@@ -4,6 +4,10 @@ A modern web application that uses AI to analyze and extract information from re
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Eye%20Drop%20Accountant-blue?style=for-the-badge)](https://eye-drop-accountant.onrender.com/)
 
+
+![Preview](screenshots/preview.png)
+*Modern drag-and-drop interface & Detailed receipt analysis results*
+
 ## ✨ Features
 
 - 📸 Upload receipts via drag-and-drop or file selection
@@ -60,11 +64,6 @@ A modern web application that uses AI to analyze and extract information from re
    # or
    yarn dev
    ```
-
-## 📸 Screenshots
-
-![Preview](screenshots/preview.png)
-*Modern drag-and-drop interface & Detailed receipt analysis results*
 
 ## 🤝 Contributing
 
